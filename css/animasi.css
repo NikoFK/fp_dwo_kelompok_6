@@ -1,0 +1,30 @@
+/* animasi.css */
+
+/* Tombol */
+.btn {
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #ffcccb; /* Ganti dengan warna yang diinginkan saat hover */
+    transform: scale(1.1); /* Membesarkan tombol sedikit saat hover */
+}
+
+/* Kartu */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: scale(1.05); /* Membesarkan kartu sedikit saat hover */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); /* Menambahkan bayangan saat hover */
+}
+
+/* Teks */
+h1 {
+    transition: color 0.3s ease;
+}
+
+h1:hover {
+    color: #ffcccb; /* Ganti dengan warna yang diinginkan saat hover */
+}
