@@ -7,6 +7,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="">
+    <style>
+        .chart-bar {
+            position: relative;
+            height: 400px;
+            /* Atur tinggi sesuai kebutuhan */
+            width: 100%;
+            /* Pastikan lebar 100% */
+        }
+
+        #myBarChart {
+            height: 100% !important;
+            /* Mengatur tinggi canvas agar 100% dari parent */
+            width: 100% !important;
+            /* Mengatur lebar canvas agar 100% dari parent */
+        }
+    </style>
 
     <title>Kelompok 6 - Product</title>
     <link rel="icon" href="img/laptop.png">
@@ -266,20 +282,36 @@
                                 <!-- Card Body -->
                                 <div class="card-body-store">
                                     <div class="chart-area-store">
-                                        <div id="canvas-holder" style="width:100%">
+                                        <div id="canvas- holder" style="width:100%">
                                             <canvas id="chart-area"></canvas>
                                         </div>
                                         <?php
                                         $mysqli = mysqli_connect("localhost", "root", "", "tugasakhirdwo");
-                                        $vendor = mysqli_query($mysqli, "SELECT SUM(sf.orderqty) as total, p.NameSub as category FROM sales_fact sf JOIN product_dimension p ON sf.ProductID = p.ProductID GROUP BY category ORDER BY total DESC LIMIT 5");
-                                        while ($row = mysqli_fetch_array($vendor)) {
-                                            $jenis_vendor[] = $row['category'];
 
-                                            $query = mysqli_query($mysqli, "SELECT SUM(sf.orderqty) as total, p.NameSub as category FROM sales_fact sf JOIN product_dimension p ON sf.ProductID = p.ProductID  GROUP BY category HAVING p.NameSub='" . $row['category'] . "'");
-                                            $row = $query->fetch_array();
-                                            $total[] = $row['total'];
+                                        // Query untuk mendapatkan total pembelian berdasarkan kategori
+                                        $query = "SELECT SUM(sf.orderqty) as total, p.NameSub as category 
+          FROM sales_fact sf 
+          JOIN product_dimension p ON sf.ProductID = p.ProductID 
+          GROUP BY p.NameSub 
+          ORDER BY total DESC 
+          LIMIT 5";
+                                        $result = mysqli_query($mysqli, $query);
+
+                                        $categories = [];
+                                        $totals = [];
+                                        $totalPurchases = 0;
+
+                                        // Hitung total pembelian keseluruhan
+                                        while ($row = mysqli_fetch_array($result)) {
+                                            $categories[] = $row['category'];
+                                            $totals[] = $row['total'];
+                                            $totalPurchases += $row['total'];
                                         }
-                                        ;
+
+                                        // Hitung persentase
+                                        $percentages = array_map(function ($total) use ($totalPurchases) {
+                                            return ($total / $totalPurchases) * 100;
+                                        }, $totals);
                                         ?>
                                         <figure class="highcharts-figure">
                                             <div id="container"></div>
@@ -294,13 +326,18 @@
                         <div class="col-xl-8 col-lg-7">
                             <div class="card shadow mb-4">
                                 <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">Top 10 Produk yang Paling Banyak
-                                        Dibeli</h6>
+                                    <h6 class="m-0 font-weight-bold text-primary">Top 5 produk jarang dibeli</h6>
                                 </div>
                                 <div class="card-body">
                                     <div class="chart-bar">
                                         <canvas id="myBarChart"></canvas>
                                     </div>
+
+
+                                    <figure class="highcharts-figure">
+                                        <div id="container"></div>
+                                        <p class="highcharts-description"></p>
+                                    </figure>
                                     <!-- Styling for the bar chart can be found in the
                                         <code>/js/demo/chart-bar-demo3.js</code> file. -->
                                 </div>
@@ -316,7 +353,7 @@
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; AW_Kelompok_6</span>
+                        <span>Copyright &copy; AW_Kelompok6</span>
                     </div>
                 </div>
             </footer>
@@ -366,66 +403,66 @@
 
     <!-- JavaScript for Charts -->
     <!-- JavaScript for Doughnut Chart Total Pembelian berdasarkan Category-->
-    
+
     <?php
 
-                // Koneksi ke database
-                include('koneksi.php');
+    // Koneksi ke database
+    include('koneksi.php');
 
-                // Periksa koneksi
-                if ($koneksi->connect_error) {
-                    die("Connection failed: " . $koneksi->connect_error);
-                }
+    // Periksa koneksi
+    if ($koneksi->connect_error) {
+        die("Connection failed: " . $koneksi->connect_error);
+    }
 
-                // Query untuk mendapatkan 5 produk yang jarang dibeli
-                $query = "SELECT p.Name AS product, SUM(sf.orderqty) AS total
+    // Query untuk mendapatkan 5 produk yang jarang dibeli
+    $query = "SELECT p.Name AS product, SUM(sf.orderqty) AS total
                         FROM sales_fact sf
                         JOIN product_dimension p ON sf.ProductID = p.ProductID
                         GROUP BY p.Name
                         ORDER BY total ASC
                         LIMIT 5";
-                $result = $koneksi->query($query);
+    $result = $koneksi->query($query);
 
-                $products = [];
-                $totals = [];
-                if ($result->num_rows > 0) {
-                    while ($row = $result->fetch_assoc()) {
-                        $products[] = $row['product'];
-                        $totals[] = (int)$row['total'];
-                    }
-                } else {
-                    echo "No results found.";
-                }
-                ?>
+    $products = [];
+    $totals = [];
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row['product'];
+            $totals[] = (int) $row['total'];
+        }
+    } else {
+        echo "No results found.";
+    }
+    ?>
 
     <script>
         var config = {
             type: 'doughnut',
             data: {
                 datasets: [{
-                    data: <?php echo json_encode($total); ?>,
+                    data: <?php echo json_encode($totals); ?>,
                     backgroundColor: [
-                        '#191970',
-                        '#0000CD',
-                        '#4169E1',
                         '#4682B4',
                         '#912CEE',
                         '#7B68EE',
                         '#6495ED',
-                        '#00BFFF',
-                        '#87CEFA',
-                        '#B0C4DE',
-                        '#48D1CC',
-                        '#7FFFD4',
-                        '#AFEEEE',
-                        '#E0FFFF',
                     ],
-                    label: 'Total Produk berdasarkan Category'
+                    label: 'Total Pembelian berdasarkan Category'
                 }],
-                labels: <?php echo json_encode($jenis_vendor); ?>
+                labels: <?php echo json_encode($categories); ?>,
             },
             options: {
-                responsive: true
+                responsive: true,
+                tooltips: {
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            var label = data.labels[tooltipItem.index] || '';
+                            var value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+                            var percentage = <?php echo json_encode($percentages); ?>[tooltipItem.index];
+                            return label + ': ' + value + ' (' + percentage.toFixed(2) + '%)';
+                        }
+                    }
+                }
             }
         };
 
@@ -443,36 +480,10 @@
 
             window.myPie.update();
         });
-
-        var colorNames = Object.keys(window.chartColors);
-        document.getElementById('addDataset').addEventListener('click', function () {
-            var newDataset = {
-                backgroundColor: [],
-                data: [],
-                label: 'New dataset ' + config.data.datasets.length,
-            };
-
-            for (var index = 0; index < config.data.labels.length; ++index) {
-                newDataset.data.push(randomScalingFactor());
-
-                var colorName = colorNames[index % colorNames.length];
-                var newColor = window.chartColors[colorName];
-                newDataset.backgroundColor.push(newColor);
-            }
-
-            config.data.datasets.push(newDataset);
-            window.myPie.update();
-        });
-
-        document.getElementById('removeDataset').addEventListener('click', function () {
-            config.data.datasets.splice(0, 1);
-            window.myPie.update();
-        });
     </script>
-
-<script>
-var ctx = document.getElementById('myBarChart').getContext('2d');
-            var myBarChart = new Chart(ctx, {
+    <script>
+        var ctx = document.getElementById('myBarChart').getContext('2d');
+        var myBarChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: <?php echo json_encode($products); ?>,
@@ -480,8 +491,8 @@ var ctx = document.getElementById('myBarChart').getContext('2d');
                     label: 'Jumlah Pembelian',
                     data: <?php echo json_encode($totals); ?>,
                     backgroundColor: 'rgba(78, 115, 223, 1)',
-            borderColor: 'rgba(78, 115, 223, 1)',
-            borderWidth: 1
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    borderWidth: 1
                 }]
             },
             options: {
@@ -489,22 +500,22 @@ var ctx = document.getElementById('myBarChart').getContext('2d');
                 maintainAspectRatio: false,
                 scales: {
                     yAxes: [{
-                gridLines: {
-                    display: true // Menghilangkan garis latar belakang pada sumbu y
+                        gridLines: {
+                            display: true // Menghilangkan garis latar belakang pada sumbu y
+                        },
+                        ticks: {
+                            beginAtZero: true,
+                            callback: function (value) {
+                                return value; // Format the y-axis labels if needed
+                            }
+                        }
+                    }],
+                    xAxes: [{
+                        gridLines: {
+                            display: false // Menghilangkan garis latar belakang pada sumbu x
+                        }
+                    }]
                 },
-                ticks: {
-                    beginAtZero: true,
-                    callback: function(value) {
-                        return value; // Format the y-axis labels if needed
-                    }
-                }
-            }],
-            xAxes: [{
-                gridLines: {
-                    display: false // Menghilangkan garis latar belakang pada sumbu x
-                }
-            }]
-        },
                 plugins: {
                     legend: {
                         display: true,
@@ -517,7 +528,8 @@ var ctx = document.getElementById('myBarChart').getContext('2d');
                 }
             }
         });
-</script>
+    </script>
+
     <!-- <script type="text/javascript">
             Highcharts.chart('container', {
                 chart: {
